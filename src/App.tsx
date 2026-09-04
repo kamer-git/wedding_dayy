@@ -372,7 +372,7 @@ export default function App() {
             <text x="350" y="492.75" fontSize="695" textAnchor="middle" fill="#636b48" fontFamily="'Playfair Display', serif">Б</text>
             <text x="1190" y="492.75" fontSize="695" textAnchor="middle" fill="#636b48" fontFamily="'Playfair Display', serif">А</text>
           </g>
-          <text x="770" y="380" fontSize="180" textAnchor="middle" fill="#f0ecd6" fontFamily="'Playfair Display', serif" fontStyle="italic">&amp;</text>
+          <text x="770" y="380" fontSize="220" textAnchor="middle" fill="#636b48" opacity="0.85" fontFamily="'Playfair Display', serif" fontStyle="italic">&amp;</text>
         </svg>
         <span className="hero-script-name" style={{ position: 'absolute', left: 'calc(var(--u) * 0)', top: 'calc(var(--u) * 397)', width: 'calc(var(--u) * 140)', height: 'calc(var(--u) * 35)', display: 'flex', justifyContent: 'center' }}>Байэл</span>
         <span className="hero-script-name" style={{ position: 'absolute', left: 'calc(var(--u) * 170)', top: 'calc(var(--u) * 397)', width: 'calc(var(--u) * 150)', height: 'calc(var(--u) * 35)', display: 'flex', justifyContent: 'center' }}>Алуа</span>
