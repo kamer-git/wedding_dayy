@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { translations, type Language, type Translations } from './translations';
 
-function Countdown() {
+function Countdown({ units }: { units: Translations['countdownUnits'] }) {
   const targetDate = new Date('2026-10-21T16:00:00').getTime();
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
-    const interval = setInterval(() => {
+    const calculate = () => {
       const now = new Date().getTime();
       const difference = targetDate - now;
 
@@ -16,10 +17,10 @@ function Countdown() {
           minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
           seconds: Math.floor((difference % (1000 * 60)) / 1000)
         });
-      } else {
-        clearInterval(interval);
       }
-    }, 1000);
+    };
+    calculate();
+    const interval = setInterval(calculate, 1000);
 
     return () => clearInterval(interval);
   }, [targetDate]);
@@ -31,22 +32,22 @@ function Countdown() {
       <div style={{ display: 'flex', justifyContent: 'center', gap: 'calc(var(--u) * 15)', alignItems: 'center' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <span className="t t-35 c-white">{formatNumber(timeLeft.days)}</span>
-          <span className="t t-10 c-white" style={{ marginTop: 'calc(var(--u) * 5)' }}>күн</span>
+          <span className="t t-10 c-white" style={{ marginTop: 'calc(var(--u) * 5)' }}>{units.days}</span>
         </div>
         <span className="t t-35 c-white" style={{ paddingBottom: 'calc(var(--u) * 15)' }}>:</span>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <span className="t t-35 c-white">{formatNumber(timeLeft.hours)}</span>
-          <span className="t t-10 c-white" style={{ marginTop: 'calc(var(--u) * 5)' }}>саат</span>
+          <span className="t t-10 c-white" style={{ marginTop: 'calc(var(--u) * 5)' }}>{units.hours}</span>
         </div>
         <span className="t t-35 c-white" style={{ paddingBottom: 'calc(var(--u) * 15)' }}>:</span>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <span className="t t-35 c-white">{formatNumber(timeLeft.minutes)}</span>
-          <span className="t t-10 c-white" style={{ marginTop: 'calc(var(--u) * 5)' }}>мүнөт</span>
+          <span className="t t-10 c-white" style={{ marginTop: 'calc(var(--u) * 5)' }}>{units.minutes}</span>
         </div>
         <span className="t t-35 c-white" style={{ paddingBottom: 'calc(var(--u) * 15)' }}>:</span>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <span className="t t-35 c-white">{formatNumber(timeLeft.seconds)}</span>
-          <span className="t t-10 c-white" style={{ marginTop: 'calc(var(--u) * 5)' }}>секунд</span>
+          <span className="t t-10 c-white" style={{ marginTop: 'calc(var(--u) * 5)' }}>{units.seconds}</span>
         </div>
       </div>
     </div>
@@ -54,8 +55,12 @@ function Countdown() {
 }
 
 export default function App() {
+  const [lang, setLang] = useState<Language>('kg');
   const [isOpen, setIsOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
+
+  const t = translations[lang];
 
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
@@ -77,28 +82,77 @@ export default function App() {
 
   const toggleSound = () => {
     const audio = document.getElementById('bg-music') as HTMLAudioElement;
-    if (audio && audio.hasAttribute('src')) {
-      if (isPlaying) {
+    if (audio) {
+      if (!audio.paused) {
         audio.pause();
+        setIsPlaying(false);
       } else {
-        audio.play().catch(e => console.warn("Play failed", e));
+        audio.play().then(() => {
+          setIsPlaying(true);
+        }).catch(e => {
+          console.warn("Play failed", e);
+        });
       }
-      setIsPlaying(!isPlaying);
     }
   };
 
   const handleEnvelopeClick = () => {
     setIsOpen(true);
-    // Auto-play music if not already playing
+    // Auto-play music if not already playing upon opening envelope
     const audio = document.getElementById('bg-music') as HTMLAudioElement;
-    if (audio && !isPlaying && audio.hasAttribute('src')) {
-      audio.play().catch(() => console.log("Auto-play blocked"));
-      setIsPlaying(true);
+    if (audio && audio.paused) {
+      audio.play().then(() => {
+        setIsPlaying(true);
+      }).catch((e) => {
+        console.log("Auto-play blocked by browser policy:", e);
+      });
     }
+  };
+
+  const handleRsvpSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setRsvpSubmitted(true);
   };
 
   return (
     <main className="frame">
+      {/* Envelope - prioritized at top of DOM for instant loading and display */}
+      <button
+        type="button"
+        className="envelope"
+        data-open={isOpen}
+        onClick={handleEnvelopeClick}
+        aria-label={t.envelopeHint}
+        tabIndex={0}
+      >
+        <span className="envelope-stage">
+          <span style={{ position: 'absolute', left: 'calc(var(--u) * -37)', top: 'calc(var(--u) * 168)', width: 'calc(var(--u) * 395)', height: 'calc(var(--u) * 409.1)' }}>
+            <img
+              alt=""
+              style={{ width: '100%', height: '100%' }}
+              src="/img/envelope-body.svg"
+              loading="eager"
+              fetchPriority="high"
+              decoding="sync"
+            />
+          </span>
+          <span style={{ position: 'absolute', left: 'calc(var(--u) * -37)', top: 'calc(var(--u) * -8)', width: 'calc(var(--u) * 395)', height: 'calc(var(--u) * 420)' }}>
+            <picture>
+              <source srcSet="/img/envelope-front-round-seal-150.webp" type="image/webp" />
+              <img
+                alt=""
+                style={{ width: '100%', height: '100%' }}
+                src="/img/envelope-front-round-seal-150.png"
+                loading="eager"
+                fetchPriority="high"
+                decoding="sync"
+              />
+            </picture>
+          </span>
+          <span className="envelope-hint">{t.envelopeHint}</span>
+        </span>
+      </button>
+
       <div className="canvas">
         {/* Background glow layers */}
         <span style={{ position: 'absolute', left: 'calc(var(--u) * 0)', top: 'calc(var(--u) * 3318.3)', width: 'calc(var(--u) * 320)', height: 'calc(var(--u) * 568.6)' }} aria-hidden="true">
@@ -153,12 +207,26 @@ export default function App() {
         </span>
         
         {/* Audio */}
-        <audio id="bg-music" src="/audio.mp3" loop preload="metadata" onError={(e) => {
-          console.warn("Audio file not found or unsupported. Please upload 'audio.mp3' to the 'public' folder.");
-          const target = e.target as HTMLAudioElement;
-          target.removeAttribute('src'); // Prevents repeated errors
-        }}></audio>
-        <button type="button" className="sound-btn" onClick={toggleSound} style={{ position: 'absolute', left: 'calc(var(--u) * 35)', top: 'calc(var(--u) * 29)', width: 'calc(var(--u) * 41)', zIndex: 9 }} aria-label="музыканы күйгүзүү / өчүрүү">
+        <audio
+          id="bg-music"
+          loop
+          preload="auto"
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+        >
+          <source src="/theme.m4a" type="audio/mp4" />
+          <source src="/audio.mp3" type="audio/mpeg" />
+        </audio>
+        
+        {/* Top Left: Sound Button */}
+        <button
+          type="button"
+          className="sound-btn"
+          onClick={toggleSound}
+          style={{ position: 'absolute', left: 'calc(var(--u) * 35)', top: 'calc(var(--u) * 29)', width: 'calc(var(--u) * 41)', zIndex: 9 }}
+          aria-label={t.soundAria}
+          id="sound-toggle-btn"
+        >
           <svg viewBox="0 0 79 64" fill="none" aria-hidden="true">
             <path d="M4 22.5h13.5L34 6.5a2 2 0 0 1 3.4 1.4v47.7a2 2 0 0 1-3.4 1.4L17.5 41H4a3 3 0 0 1-3-3V25.5a3 3 0 0 1 3-3Z" fill="#636b48"></path>
             <g stroke="#636b48" strokeWidth="5.4" strokeLinecap="round" fill="none">
@@ -168,24 +236,84 @@ export default function App() {
             </g>
           </svg>
         </button>
-        <p className="t animate-on-scroll t-13 c-ink t-nowrap" style={{ position: 'absolute', left: 'calc(var(--u) * 10)', top: 'calc(var(--u) * 68)', width: 'calc(var(--u) * 89)', zIndex: 9 }}>музыканы<br />күйгүзүү / өчүрүү</p>
+        <p className="t animate-on-scroll t-13 c-ink t-nowrap" style={{ position: 'absolute', left: 'calc(var(--u) * 10)', top: 'calc(var(--u) * 68)', width: 'calc(var(--u) * 89)', zIndex: 9 }}>
+          {t.soundLabel[0]}<br />{t.soundLabel[1]}
+        </p>
         
-        {/* Scroll indicator */}
-        <span className="scroll-track" style={{ position: 'absolute', left: 'calc(var(--u) * 268)', top: 'calc(var(--u) * 27)', width: 'calc(var(--u) * 4)', height: 'calc(var(--u) * 30.1)', zIndex: 9 }} aria-hidden="true"></span>
-        <span className="scroll-thumb" style={{ position: 'absolute', left: 'calc(var(--u) * 268)', top: 'calc(var(--u) * 27)', width: 'calc(var(--u) * 4)', height: 'calc(var(--u) * 9.7)', zIndex: 9 }} aria-hidden="true"></span>
-        <p className="t animate-on-scroll t-13 c-ink t-nowrap" style={{ position: 'absolute', left: 'calc(var(--u) * 203)', top: 'calc(var(--u) * 64)', width: 'calc(var(--u) * 133)', zIndex: 9 }}>жогору<br />жылдырыңыз</p>
+        {/* Top Right: Language Switcher (replacing previous scroll indicator) */}
+        <div
+          className="lang-switch"
+          style={{
+            position: 'absolute',
+            left: 'calc(var(--u) * 228)',
+            top: 'calc(var(--u) * 27)',
+            width: 'calc(var(--u) * 78)',
+            height: 'calc(var(--u) * 28)',
+            borderRadius: 'calc(var(--u) * 14)',
+            padding: 'calc(var(--u) * 2)',
+            zIndex: 10,
+          }}
+          role="group"
+          aria-label="Тилди тандоо / Тілді таңдау"
+        >
+          <button
+            type="button"
+            className={`lang-btn ${lang === 'kg' ? 'active' : ''}`}
+            onClick={() => setLang('kg')}
+            aria-pressed={lang === 'kg'}
+            id="lang-btn-kg"
+          >
+            КЫРГ
+          </button>
+          <button
+            type="button"
+            className={`lang-btn ${lang === 'kz' ? 'active' : ''}`}
+            onClick={() => setLang('kz')}
+            aria-pressed={lang === 'kz'}
+            id="lang-btn-kz"
+          >
+            ҚАЗ
+          </button>
+        </div>
         
         {/* Calendar */}
         <span style={{ position: 'absolute', left: 'calc(var(--u) * 28)', top: 'calc(var(--u) * 1627.2)', width: 'calc(var(--u) * 265)', height: 'calc(var(--u) * 181.7)' }}>
           <div className="cal">
-            <div className="cal-head"><span>ОКТЯБРЬ</span><span>2026</span></div>
+            <div className="cal-head"><span>{t.calendarMonth}</span><span>2026</span></div>
             <div className="cal-rule"></div>
             <div className="cal-grid">
-              <span className="cal-wd">дүй</span><span className="cal-wd">шей</span><span className="cal-wd">шар</span><span className="cal-wd">бей</span><span className="cal-wd">жум</span><span className="cal-wd">иш</span><span className="cal-wd">жек</span>
+              {t.calendarWeekdays.map((wd, i) => (
+                <span key={i} className="cal-wd">{wd}</span>
+              ))}
               <span className="cal-day"></span><span className="cal-day"></span><span className="cal-day"></span><span className="cal-day">1</span><span className="cal-day">2</span><span className="cal-day">3</span><span className="cal-day">4</span>
               <span className="cal-day">5</span><span className="cal-day">6</span><span className="cal-day">7</span><span className="cal-day">8</span><span className="cal-day">9</span><span className="cal-day">10</span><span className="cal-day">11</span>
               <span className="cal-day">12</span><span className="cal-day">13</span><span className="cal-day">14</span><span className="cal-day">15</span><span className="cal-day">16</span><span className="cal-day">17</span><span className="cal-day">18</span>
-              <span className="cal-day">19</span><span className="cal-day">20</span><span className="cal-day"><span className="cal-day-mark" aria-hidden="true"></span>21</span><span className="cal-day">22</span><span className="cal-day">23</span><span className="cal-day">24</span>
+              <span className="cal-day">19</span>
+              <span className="cal-day">20</span>
+              <span className="cal-day" style={{ position: 'relative' }}>
+                <span
+                  className="beat-soft"
+                  style={{
+                    position: 'absolute',
+                    width: 'calc(var(--u) * 36)',
+                    height: 'calc(var(--u) * 36)',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    margin: 'auto',
+                    pointerEvents: 'none',
+                    zIndex: 0,
+                  }}
+                  aria-hidden="true"
+                >
+                  <img src="/img/heart.svg" alt="" style={{ width: '100%', height: '100%' }} />
+                </span>
+                <span style={{ position: 'relative', zIndex: 1, color: 'var(--color-olive)', fontWeight: 500 }}>21</span>
+              </span>
+              <span className="cal-day">22</span>
+              <span className="cal-day">23</span>
+              <span className="cal-day">24</span>
               <span className="cal-day">25</span><span className="cal-day">26</span><span className="cal-day">27</span><span className="cal-day">28</span><span className="cal-day">29</span><span className="cal-day">30</span><span className="cal-day">31</span>
             </div>
           </div>
@@ -238,65 +366,124 @@ export default function App() {
         
         <span className="shape-olive" style={{ position: 'absolute', left: 'calc(var(--u) * 0)', top: 'calc(var(--u) * 623.1)', width: 'calc(var(--u) * 320)', height: 'calc(var(--u) * 671.1)', borderRadius: 'calc(var(--u) * 200)' }}></span>
         
-        <p className="t animate-on-scroll t-17 c-white" style={{ position: 'absolute', left: 'calc(var(--u) * 117)', top: 'calc(var(--u) * 962.1)', width: 'calc(var(--u) * 87)' }}>менен</p>
+        {/* Conjunction "менен" / "мен" */}
+        <p className="t animate-on-scroll t-17 c-white" style={{ position: 'absolute', left: 'calc(var(--u) * 117)', top: 'calc(var(--u) * 962.1)', width: 'calc(var(--u) * 87)' }}>
+          {t.and}
+        </p>
         
         <span style={{ position: 'absolute', left: 'calc(var(--u) * 63.2)', top: 'calc(var(--u) * 2041.4)', width: 'calc(var(--u) * 76.9)', height: 'calc(var(--u) * 52.3)' }} aria-hidden="true">
           <img src="/img/bird-fly-b.webp" alt="" style={{ position: 'absolute', height: '100%', width: '100%', left: 0, top: 0 }} />
         </span>
         
         {/* Timeline Details */}
-        <p className="t animate-on-scroll t-15 c-olive" style={{ position: 'absolute', left: 'calc(var(--u) * 10)', top: 'calc(var(--u) * 2694.3)', width: 'calc(var(--u) * 110)', textAlign: 'right', textShadow: '0 0 6px #f7f0e4, 0 0 10px #f7f0e4' }}>21:00<br /><span>Той тортун<br /></span><span>кесүү</span></p>
-        <p className="t animate-on-scroll t-15 c-olive" style={{ position: 'absolute', left: 'calc(var(--u) * 10)', top: 'calc(var(--u) * 2430.3)', width: 'calc(var(--u) * 110)', textAlign: 'right', textShadow: '0 0 6px #f7f0e4, 0 0 10px #f7f0e4' }}>17:00<br /><span>Тойдун<br /></span><span>башталышы</span></p>
-        <p className="t animate-on-scroll t-15 c-olive" style={{ position: 'absolute', left: 'calc(var(--u) * 200)', top: 'calc(var(--u) * 2789.3)', width: 'calc(var(--u) * 110)', textAlign: 'left', textShadow: '0 0 6px #f7f0e4, 0 0 10px #f7f0e4' }}>22:00<br /><span>Тойдун<br /></span><span>аякташы</span></p>
-        <p className="t animate-on-scroll t-15 c-olive" style={{ position: 'absolute', left: 'calc(var(--u) * 200)', top: 'calc(var(--u) * 2553.3)', width: 'calc(var(--u) * 110)', textAlign: 'left', textShadow: '0 0 6px #f7f0e4, 0 0 10px #f7f0e4' }}>19:30<br /><span>Жаш жубайлардын<br /></span><span>алгачкы бийи</span></p>
-        <p className="t animate-on-scroll t-15 c-olive" style={{ position: 'absolute', left: 'calc(var(--u) * 200)', top: 'calc(var(--u) * 2282.2)', width: 'calc(var(--u) * 110)', textAlign: 'left', textShadow: '0 0 6px #f7f0e4, 0 0 10px #f7f0e4' }}>16:00<br /><span>Конокторду<br /></span><span>тосуп алуу</span></p>
+        <p className="t animate-on-scroll t-15 c-olive" style={{ position: 'absolute', left: 'calc(var(--u) * 10)', top: 'calc(var(--u) * 2694.3)', width: 'calc(var(--u) * 110)', textAlign: 'right', textShadow: '0 0 6px #f7f0e4, 0 0 10px #f7f0e4' }}>
+          21:00<br /><span>{t.timeline.t21[0]}<br /></span><span>{t.timeline.t21[1]}</span>
+        </p>
+        <p className="t animate-on-scroll t-15 c-olive" style={{ position: 'absolute', left: 'calc(var(--u) * 10)', top: 'calc(var(--u) * 2430.3)', width: 'calc(var(--u) * 110)', textAlign: 'right', textShadow: '0 0 6px #f7f0e4, 0 0 10px #f7f0e4' }}>
+          17:00<br /><span>{t.timeline.t17[0]}<br /></span><span>{t.timeline.t17[1]}</span>
+        </p>
+        <p className="t animate-on-scroll t-15 c-olive" style={{ position: 'absolute', left: 'calc(var(--u) * 200)', top: 'calc(var(--u) * 2789.3)', width: 'calc(var(--u) * 110)', textAlign: 'left', textShadow: '0 0 6px #f7f0e4, 0 0 10px #f7f0e4' }}>
+          22:00<br /><span>{t.timeline.t22[0]}<br /></span><span>{t.timeline.t22[1]}</span>
+        </p>
+        <p className="t animate-on-scroll t-15 c-olive" style={{ position: 'absolute', left: 'calc(var(--u) * 200)', top: 'calc(var(--u) * 2553.3)', width: 'calc(var(--u) * 110)', textAlign: 'left', textShadow: '0 0 6px #f7f0e4, 0 0 10px #f7f0e4' }}>
+          19:30<br /><span>{t.timeline.t19_30[0]}<br /></span><span>{t.timeline.t19_30[1]}</span>
+        </p>
+        <p className="t animate-on-scroll t-15 c-olive" style={{ position: 'absolute', left: 'calc(var(--u) * 200)', top: 'calc(var(--u) * 2282.2)', width: 'calc(var(--u) * 110)', textAlign: 'left', textShadow: '0 0 6px #f7f0e4, 0 0 10px #f7f0e4' }}>
+          16:00<br /><span>{t.timeline.t16[0]}<br /></span><span>{t.timeline.t16[1]}</span>
+        </p>
         
-        <h2 className="t animate-on-scroll t-20 c-olive" style={{ position: 'absolute', left: 'calc(var(--u) * 10)', top: 'calc(var(--u) * 2160.2)', width: 'calc(var(--u) * 301)' }}>Тойдун жүрүшү:</h2>
+        <h2 className="t animate-on-scroll t-20 c-olive" style={{ position: 'absolute', left: 'calc(var(--u) * 10)', top: 'calc(var(--u) * 2160.2)', width: 'calc(var(--u) * 301)' }}>
+          {t.programTitle}
+        </h2>
         
-        <p className="t animate-on-scroll t-16 c-white" style={{ position: 'absolute', left: 'calc(var(--u) * 15)', top: 'calc(var(--u) * 3790.4)', width: 'calc(var(--u) * 290)' }}><span>Тойго катышарыңызды<br /></span><span>билдирип коюңуз:</span></p>
-        <p className="t animate-on-scroll t-17 c-olive" style={{ position: 'absolute', left: 'calc(var(--u) * 15)', top: 'calc(var(--u) * 3467.4)', width: 'calc(var(--u) * 290)' }}><span>Сиздерди чыдамсыздык менен күтөбүз!<br /></span><span><br /></span><span>Урмат менен, той ээлери:</span></p>
+        <p className="t animate-on-scroll t-16 c-white" style={{ position: 'absolute', left: 'calc(var(--u) * 15)', top: 'calc(var(--u) * 3790.4)', width: 'calc(var(--u) * 290)' }}>
+          <span>{t.rsvpNotice[0]}<br /></span><span>{t.rsvpNotice[1]}</span>
+        </p>
+        <p className="t animate-on-scroll t-17 c-olive" style={{ position: 'absolute', left: 'calc(var(--u) * 15)', top: 'calc(var(--u) * 3467.4)', width: 'calc(var(--u) * 290)' }}>
+          <span>{t.hostsIntro[0]}<br /></span><span><br /></span><span>{t.hostsIntro[1]}</span>
+        </p>
         
-        <Countdown />
-        <h2 className="t animate-on-scroll t-20 c-white" style={{ position: 'absolute', left: 'calc(var(--u) * 14)', top: 'calc(var(--u) * 4188.4)', width: 'calc(var(--u) * 301)' }}>Тойго чейин:</h2>
+        <Countdown units={t.countdownUnits} />
+        <h2 className="t animate-on-scroll t-20 c-white" style={{ position: 'absolute', left: 'calc(var(--u) * 14)', top: 'calc(var(--u) * 4188.4)', width: 'calc(var(--u) * 301)' }}>
+          {t.countdownTitle}
+        </h2>
         
-        <h2 className="t animate-on-scroll t-35 c-olive" style={{ position: 'absolute', left: 'calc(var(--u) * 10)', top: 'calc(var(--u) * 3130)', width: 'calc(var(--u) * 301)' }}>Арна</h2>
-        <p className="t animate-on-scroll t-17 c-olive" style={{ position: 'absolute', left: 'calc(var(--u) * 10)', top: 'calc(var(--u) * 3190)', width: 'calc(var(--u) * 301)' }}>ресторан<br />Курманжан Датка көчөсү, 152<br />Бишкек шаары</p>
-        <a href="https://2gis.kg/bishkek/geo/70000001112761356" className="animate-on-scroll" target="_blank" rel="noopener noreferrer" style={{ position: 'absolute', left: 'calc(var(--u) * 40)', top: 'calc(var(--u) * 3280)', width: 'calc(var(--u) * 241)', height: 'calc(var(--u) * 45)', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#636b48', color: '#ffffff', textDecoration: 'none', fontSize: 'calc(var(--u) * 14)', fontFamily: 'Montserrat, sans-serif', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: '300' }}>Картадан көрүү</a>
-        <p className="t animate-on-scroll t-17 c-white" style={{ position: 'absolute', left: 'calc(var(--u) * 10)', top: 'calc(var(--u) * 1108.1)', width: 'calc(var(--u) * 301)' }}><span>бактысына күбө болуп,<br /></span><span>тоюбузга каалоо айтып,<br /></span><span>кадырлуу коногубуз болуп кетүүгө<br /></span><span>чакырабыз!</span></p>
-        <p className="t animate-on-scroll t-17 c-white" style={{ position: 'absolute', left: 'calc(var(--u) * 10)', top: 'calc(var(--u) * 750.1)', width: 'calc(var(--u) * 301)' }}><span>Урматтуу биздин сыйлуу<br /></span><span>коногубуз!<br /></span><span><br /></span><span>Сиздерди балдарыбыз</span></p>
+        <h2 className="t animate-on-scroll t-35 c-olive" style={{ position: 'absolute', left: 'calc(var(--u) * 10)', top: 'calc(var(--u) * 3130)', width: 'calc(var(--u) * 301)' }}>
+          {t.venueName}
+        </h2>
+        <p className="t animate-on-scroll t-17 c-olive" style={{ position: 'absolute', left: 'calc(var(--u) * 10)', top: 'calc(var(--u) * 3190)', width: 'calc(var(--u) * 301)' }}>
+          {t.venueType}<br />{t.venueAddress[0]}<br />{t.venueAddress[1]}
+        </p>
+        <a
+          href="https://2gis.kg/bishkek/geo/70000001112761356"
+          className="animate-on-scroll"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ position: 'absolute', left: 'calc(var(--u) * 40)', top: 'calc(var(--u) * 3280)', width: 'calc(var(--u) * 241)', height: 'calc(var(--u) * 45)', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#636b48', color: '#ffffff', textDecoration: 'none', fontSize: 'calc(var(--u) * 14)', fontFamily: 'Montserrat, sans-serif', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: '300' }}
+        >
+          {t.mapButton}
+        </a>
         
-        <h2 className="script-box animate-on-scroll" style={{ position: 'absolute', left: 'calc(var(--u) * 28)', top: 'calc(var(--u) * 3700.4)', width: 'calc(var(--u) * 233)', height: 'calc(var(--u) * 79.5)' }}><span className="script c-cream" style={{ fontSize: 'calc(var(--u) * 46)' }}>Сурамжылоо</span></h2>
+        <p className="t animate-on-scroll t-17 c-white" style={{ position: 'absolute', left: 'calc(var(--u) * 10)', top: 'calc(var(--u) * 1108.1)', width: 'calc(var(--u) * 301)' }}>
+          <span>{t.invitationBody[0]}<br /></span>
+          <span>{t.invitationBody[1]}<br /></span>
+          <span>{t.invitationBody[2]}<br /></span>
+          <span>{t.invitationBody[3]}</span>
+        </p>
+        <p className="t animate-on-scroll t-17 c-white" style={{ position: 'absolute', left: 'calc(var(--u) * 10)', top: 'calc(var(--u) * 750.1)', width: 'calc(var(--u) * 301)' }}>
+          <span>{t.greetingIntro[0]}<br /></span>
+          <span>{t.greetingIntro[1]}<br /></span>
+          <span><br /></span>
+          <span>{t.greetingIntro[2]}</span>
+        </p>
+        
+        <h2 className="script-box animate-on-scroll" style={{ position: 'absolute', left: 'calc(var(--u) * 28)', top: 'calc(var(--u) * 3700.4)', width: 'calc(var(--u) * 233)', height: 'calc(var(--u) * 79.5)' }}>
+          <span className="script c-cream" style={{ fontSize: 'calc(var(--u) * 46)' }}>{t.rsvpTitle}</span>
+        </h2>
         
         <div style={{ position: 'absolute', left: 'calc(var(--u) * 15)', top: 'calc(var(--u) * 3858.4)', width: 'calc(var(--u) * 290)', height: 'calc(var(--u) * 257.1)' }}>
-          <form className="form" onSubmit={(e) => e.preventDefault()}>
-            <input className="form-input" type="text" autoComplete="name" placeholder="Аты-жөнүңүз" aria-label="Аты-жөнүңүз" required name="name" style={{ fontFamily: 'Montserrat, sans-serif' }} />
-            <p className="form-question" id="rsvp-question">Жубайыңыз менен келсеңиз, экөөңүздүн тең аты-жөнүңүздү жазыңыз</p>
-            <fieldset className="form-options" aria-labelledby="rsvp-question">
-              <label className="form-option">
-                <input type="radio" required name="answer" value="Албетте, келем" />
-                <span className="form-dot"></span><span>Албетте, келем</span>
-              </label>
-              <label className="form-option">
-                <input type="radio" required name="answer" value="Жубайым менен келем" />
-                <span className="form-dot"></span><span>Жубайым менен келем</span>
-              </label>
-              <label className="form-option">
-                <input type="radio" required name="answer" value="Келе албайм" />
-                <span className="form-dot"></span><span>Келе албайм</span>
-              </label>
-            </fieldset>
-            <button className="form-submit" type="submit" style={{ fontFamily: 'Montserrat, sans-serif' }}>Жоопту жөнөтүү</button>
-          </form>
+          {rsvpSubmitted ? (
+            <div style={{ padding: 'calc(var(--u) * 24)', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 'calc(var(--u) * 12)', textAlign: 'center', color: '#ffffff', border: '1px solid rgba(255,255,255,0.2)' }}>
+              <div style={{ fontSize: 'calc(var(--u) * 28)', marginBottom: 'calc(var(--u) * 10)' }}>✓</div>
+              <p style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 'calc(var(--u) * 15)', lineHeight: 1.5 }}>
+                {t.rsvpSuccess}
+              </p>
+            </div>
+          ) : (
+            <form className="form" onSubmit={handleRsvpSubmit}>
+              <input className="form-input" type="text" autoComplete="name" placeholder={t.rsvpPlaceholder} aria-label={t.rsvpPlaceholder} required name="name" style={{ fontFamily: 'Montserrat, sans-serif' }} />
+              <p className="form-question" id="rsvp-question">{t.rsvpQuestion}</p>
+              <fieldset className="form-options" aria-labelledby="rsvp-question">
+                <label className="form-option">
+                  <input type="radio" required name="answer" value={t.rsvpOptions[0]} />
+                  <span className="form-dot"></span><span>{t.rsvpOptions[0]}</span>
+                </label>
+                <label className="form-option">
+                  <input type="radio" required name="answer" value={t.rsvpOptions[1]} />
+                  <span className="form-dot"></span><span>{t.rsvpOptions[1]}</span>
+                </label>
+                <label className="form-option">
+                  <input type="radio" required name="answer" value={t.rsvpOptions[2]} />
+                  <span className="form-dot"></span><span>{t.rsvpOptions[2]}</span>
+                </label>
+              </fieldset>
+              <button className="form-submit" type="submit" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                {t.rsvpSubmit}
+              </button>
+            </form>
+          )}
         </div>
         
-        <p className="script-box animate-on-scroll" style={{ position: 'absolute', left: 'calc(var(--u) * 0)', top: 'calc(var(--u) * 3563.4)', width: 'calc(var(--u) * 320)', height: 'calc(var(--u) * 77.4)', display: 'flex', justifyContent: 'center' }}><span className="script c-olive" style={{ fontSize: 'calc(var(--u) * 42)' }}>Болот — Чынар</span></p>
-        <p className="script-box animate-on-scroll" style={{ position: 'absolute', left: 'calc(var(--u) * 0)', top: 'calc(var(--u) * 1005.1)', width: 'calc(var(--u) * 320)', height: 'calc(var(--u) * 88.9)', display: 'flex', justifyContent: 'center' }}><span className="script c-cream" style={{ fontSize: 'calc(var(--u) * 52)' }}>Алуанын</span></p>
+        <p className="script-box animate-on-scroll" style={{ position: 'absolute', left: 'calc(var(--u) * 0)', top: 'calc(var(--u) * 3563.4)', width: 'calc(var(--u) * 320)', height: 'calc(var(--u) * 77.4)', display: 'flex', justifyContent: 'center' }}>
+          <span className="script c-olive" style={{ fontSize: 'calc(var(--u) * 42)' }}>{t.hostsNames}</span>
+        </p>
+        <p className="script-box animate-on-scroll" style={{ position: 'absolute', left: 'calc(var(--u) * 0)', top: 'calc(var(--u) * 1005.1)', width: 'calc(var(--u) * 320)', height: 'calc(var(--u) * 88.9)', display: 'flex', justifyContent: 'center' }}>
+          <span className="script c-cream" style={{ fontSize: 'calc(var(--u) * 52)' }}>{t.bridePossessive}</span>
+        </p>
         
-        <span className="beat-soft" style={{ position: 'absolute', left: 'calc(var(--u) * 262)', top: 'calc(var(--u) * 1760.2)', width: 'calc(var(--u) * 38)', height: 'calc(var(--u) * 38.2)' }} aria-hidden="true">
-          <img src="/img/heart.svg" alt="" style={{ position: 'absolute', height: '100%', width: '100%', left: 0, top: 0 }} />
-        </span>
-        
-        <p className="script-box animate-on-scroll" style={{ position: 'absolute', left: 'calc(var(--u) * 0)', top: 'calc(var(--u) * 883.1)', width: 'calc(var(--u) * 320)', height: 'calc(var(--u) * 92.3)', display: 'flex', justifyContent: 'center' }}><span className="script c-cream" style={{ fontSize: 'calc(var(--u) * 52)' }}>Байэл</span></p>
+        <p className="script-box animate-on-scroll" style={{ position: 'absolute', left: 'calc(var(--u) * 0)', top: 'calc(var(--u) * 883.1)', width: 'calc(var(--u) * 320)', height: 'calc(var(--u) * 92.3)', display: 'flex', justifyContent: 'center' }}>
+          <span className="script c-cream" style={{ fontSize: 'calc(var(--u) * 52)' }}>Байэл</span>
+        </p>
         
         {/* Timeline images */}
         <span style={{ position: 'absolute', left: 'calc(var(--u) * 208)', top: 'calc(var(--u) * 2663.3)', width: 'calc(var(--u) * 94)', height: 'calc(var(--u) * 101.6)' }} aria-hidden="true">
@@ -315,29 +502,15 @@ export default function App() {
           <img src="/img/prog-table.png" alt="" style={{ position: 'absolute', height: '100%', width: '100%', left: 0, top: 0 }} />
         </span>
         <span style={{ position: 'absolute', left: 'calc(var(--u) * 81)', top: 'calc(var(--u) * 2332.2)', width: 'calc(var(--u) * 156)', height: 'calc(var(--u) * 726.9)' }} aria-hidden="true">
-          {/* We might not have timeline.svg, fallback is fine or user uploads it */}
           <img src="/img/timeline.svg" alt="" style={{ position: 'absolute', height: '100%', width: '100%', left: 0, top: 0 }} />
         </span>
-        
-        {/* Envelope */}
-        <button type="button" className="envelope" data-open={isOpen} onClick={handleEnvelopeClick} aria-label="Ачуу үчүн басыңыз" tabIndex={0}>
-          <span className="envelope-stage">
-            <span style={{ position: 'absolute', left: 'calc(var(--u) * -37)', top: 'calc(var(--u) * 168)', width: 'calc(var(--u) * 395)', height: 'calc(var(--u) * 409.1)' }}>
-              <img alt="" style={{ width: '100%', height: '100%' }} src="/img/envelope-body.svg" />
-            </span>
-            <span style={{ position: 'absolute', left: 'calc(var(--u) * -37)', top: 'calc(var(--u) * -8)', width: 'calc(var(--u) * 395)', height: 'calc(var(--u) * 420)' }}>
-              <img alt="" style={{ width: '100%', height: '100%' }} src="/img/envelope-front-round-seal-150.png" />
-            </span>
-            <span className="envelope-hint">Ачуу үчүн басыңыз</span>
-          </span>
-        </button>
         
         <span style={{ position: 'absolute', left: 'calc(var(--u) * 224)', top: 'calc(var(--u) * 3012.3)', width: 'calc(var(--u) * 35)', height: 'calc(var(--u) * 47.2)' }} aria-hidden="true">
           <img src="/img/pin.svg" alt="" style={{ position: 'absolute', height: '100%', width: '100%', left: 0, top: 0 }} />
         </span>
         
       </div>
-      <p className="sr-only">Байэл менен Алуа — 21.10.2026, Арна, Курманжан Датка көчөсү, 152, Бишкек</p>
+      <p className="sr-only">{t.srOnly}</p>
     </main>
   );
 }
