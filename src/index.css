@@ -216,9 +216,16 @@ body {
 .form {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--u) * 16);
+  gap: calc(var(--u) * 12);
   width: 100%;
-  height: 100%;
+}
+.name-row {
+  display: flex;
+  gap: calc(var(--u) * 8);
+  width: 100%;
+}
+.name-row .form-input {
+  flex: 1;
 }
 .form-input {
   width: 100%;
@@ -226,11 +233,12 @@ body {
   border: 1px solid rgba(255,255,255,0.3);
   background: transparent;
   border-radius: calc(var(--u) * 4);
-  padding: 0 calc(var(--u) * 16);
+  padding: 0 calc(var(--u) * 12);
   color: var(--color-white);
-  font-size: calc(var(--u) * 15);
+  font-size: calc(var(--u) * 14);
   font-family: inherit;
   box-sizing: border-box;
+  transition: border-color 0.2s;
 }
 .form-input::placeholder {
   color: rgba(255,255,255,0.6);
@@ -238,17 +246,18 @@ body {
 .form-input:focus {
   outline: none;
   border-color: var(--color-white);
+  background: rgba(255, 255, 255, 0.05);
 }
 .form-question {
   color: var(--color-white);
   font-size: calc(var(--u) * 13);
-  margin: 0;
-  opacity: 0.8;
+  margin: calc(var(--u) * 2) 0 0 0;
+  opacity: 0.85;
 }
 .form-options {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--u) * 12);
+  gap: calc(var(--u) * 10);
   border: none;
   padding: 0;
   margin: 0;
@@ -258,7 +267,7 @@ body {
   align-items: center;
   gap: calc(var(--u) * 12);
   color: var(--color-white);
-  font-size: calc(var(--u) * 15);
+  font-size: calc(var(--u) * 14.5);
   cursor: pointer;
 }
 .form-option input {
@@ -272,6 +281,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 .form-option input:checked + .form-dot::after {
   content: '';
@@ -287,9 +297,23 @@ body {
   border: none;
   border-radius: calc(var(--u) * 4);
   font-size: calc(var(--u) * 15);
-  font-weight: 300;
+  font-weight: 400;
   cursor: pointer;
-  margin-top: calc(var(--u) * 8);
+  margin-top: calc(var(--u) * 6);
+  transition: opacity 0.2s, transform 0.1s;
+}
+.form-submit:active {
+  transform: scale(0.99);
+}
+.form-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+.form-error {
+  color: #ffcccc;
+  font-size: calc(var(--u) * 12.5);
+  text-align: center;
+  margin: 0;
 }
 
 .envelope {

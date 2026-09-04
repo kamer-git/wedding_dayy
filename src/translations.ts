@@ -26,11 +26,15 @@ export interface Translations {
   bridePossessive: string;
   rsvpTitle: string;
   rsvpNotice: [string, string];
+  rsvpLastNamePlaceholder: string;
+  rsvpFirstNamePlaceholder: string;
+  rsvpPartnerPlaceholder: string;
   rsvpQuestion: string;
-  rsvpPlaceholder: string;
   rsvpOptions: [string, string, string];
   rsvpSubmit: string;
+  rsvpSubmitting: string;
   rsvpSuccess: string;
+  rsvpError: string;
   countdownTitle: string;
   countdownUnits: {
     days: string;
@@ -73,15 +77,19 @@ export const translations: Record<Language, Translations> = {
     bridePossessive: "Алуанын",
     rsvpTitle: "Сурамжылоо",
     rsvpNotice: ["Тойго катышарыңызды", "билдирип коюңуз:"],
-    rsvpQuestion: "Жубайыңыз менен келсеңиз, экөөңүздүн тең аты-жөнүңүздү жазыңыз",
-    rsvpPlaceholder: "Аты-жөнүңүз",
+    rsvpLastNamePlaceholder: "Фамилияңыз *",
+    rsvpFirstNamePlaceholder: "Атыңыз *",
+    rsvpPartnerPlaceholder: "Жубайыңыздын / өнөктөшүңүздүн аты-жөнү *",
+    rsvpQuestion: "Тойго келесизби?",
     rsvpOptions: [
       "Жалгыз келем",
       "Жубайым менен келем",
       "Келе албайм"
     ],
     rsvpSubmit: "Жоопту жөнөтүү",
+    rsvpSubmitting: "Жөнөтүлүүдө...",
     rsvpSuccess: "Жообуңуз кабыл алынды! Чоң рахмат!",
+    rsvpError: "Ката кетти, кайрадан аракет кылып көрүңүз",
     countdownTitle: "Тойго чейин:",
     countdownUnits: {
       days: "күн",
@@ -122,15 +130,19 @@ export const translations: Record<Language, Translations> = {
     bridePossessive: "Алуаның",
     rsvpTitle: "Сауалнама",
     rsvpNotice: ["Тойға қатысатыныңызды", "растауыңызды сұраймыз:"],
-    rsvpQuestion: "Жұбайыңызбен келсеңіз, екеуіңіздің де аты-жөніңізді жазыңыз",
-    rsvpPlaceholder: "Аты-жөніңіз",
+    rsvpLastNamePlaceholder: "Тегіңіз (фамилияңыз) *",
+    rsvpFirstNamePlaceholder: "Атыңыз *",
+    rsvpPartnerPlaceholder: "Жұбайыңыздың / серігіңіздің аты-жөні *",
+    rsvpQuestion: "Тойға келесіз бе?",
     rsvpOptions: [
       "Жалғыз келемін",
       "Жұбайыммен келемін",
       "Келе алмаймын"
     ],
     rsvpSubmit: "Жауапты жіберу",
+    rsvpSubmitting: "Жіберілуде...",
     rsvpSuccess: "Жауабыңыз қабылданды! Үлкен рахмет!",
+    rsvpError: "Қате кетті, қайтадан байқап көріңіз",
     countdownTitle: "Тойға дейін:",
     countdownUnits: {
       days: "күн",

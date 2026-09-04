@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { translations, type Language, type Translations } from './translations';
+import { submitRsvp } from './rsvpService';
 
 function Countdown({ units }: { units: Translations['countdownUnits'] }) {
   const targetDate = new Date('2026-10-21T16:00:00').getTime();
@@ -59,6 +60,12 @@ export default function App() {
   const [isOpen, setIsOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
+  const [lastName, setLastName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [attendance, setAttendance] = useState('');
+  const [partnerName, setPartnerName] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const t = translations[lang];
 
@@ -109,9 +116,36 @@ export default function App() {
     }
   };
 
-  const handleRsvpSubmit = (e: React.FormEvent) => {
+  const handleRsvpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setRsvpSubmitted(true);
+    if (!lastName.trim() || !firstName.trim() || !attendance) {
+      return;
+    }
+
+    // If "with spouse" is chosen but partner name is blank
+    const isWithSpouse = attendance === t.rsvpOptions[1];
+    if (isWithSpouse && !partnerName.trim()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError('');
+
+    try {
+      await submitRsvp({
+        lastName: lastName.trim(),
+        firstName: firstName.trim(),
+        attendance,
+        partnerName: isWithSpouse ? partnerName.trim() : undefined,
+        language: lang,
+        submittedAt: new Date().toISOString(),
+      });
+      setRsvpSubmitted(true);
+    } catch (err) {
+      setSubmitError(t.rsvpError);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -223,11 +257,11 @@ export default function App() {
           type="button"
           className="sound-btn"
           onClick={toggleSound}
-          style={{ position: 'absolute', left: 'calc(var(--u) * 35)', top: 'calc(var(--u) * 29)', width: 'calc(var(--u) * 41)', zIndex: 9 }}
+          style={{ position: 'absolute', left: 'calc(var(--u) * 33)', top: 'calc(var(--u) * 29)', width: 'calc(var(--u) * 45)', zIndex: 9 }}
           aria-label={t.soundAria}
           id="sound-toggle-btn"
         >
-          <svg viewBox="0 0 79 64" fill="none" aria-hidden="true">
+          <svg viewBox="-2 -2 82 68" fill="none" aria-hidden="true" style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
             <path d="M4 22.5h13.5L34 6.5a2 2 0 0 1 3.4 1.4v47.7a2 2 0 0 1-3.4 1.4L17.5 41H4a3 3 0 0 1-3-3V25.5a3 3 0 0 1 3-3Z" fill="#636b48"></path>
             <g stroke="#636b48" strokeWidth="5.4" strokeLinecap="round" fill="none">
               <path className="sound-wave" d="M48 22.5a17 17 0 0 1 0 19" style={{ opacity: isPlaying ? 1 : 0.2 }}></path>
@@ -441,7 +475,7 @@ export default function App() {
           <span className="script c-cream" style={{ fontSize: 'calc(var(--u) * 46)' }}>{t.rsvpTitle}</span>
         </h2>
         
-        <div style={{ position: 'absolute', left: 'calc(var(--u) * 15)', top: 'calc(var(--u) * 3858.4)', width: 'calc(var(--u) * 290)', height: 'calc(var(--u) * 257.1)' }}>
+        <div style={{ position: 'absolute', left: 'calc(var(--u) * 15)', top: 'calc(var(--u) * 3858.4)', width: 'calc(var(--u) * 290)' }}>
           {rsvpSubmitted ? (
             <div style={{ padding: 'calc(var(--u) * 24)', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 'calc(var(--u) * 12)', textAlign: 'center', color: '#ffffff', border: '1px solid rgba(255,255,255,0.2)' }}>
               <div style={{ fontSize: 'calc(var(--u) * 28)', marginBottom: 'calc(var(--u) * 10)' }}>✓</div>
@@ -451,24 +485,95 @@ export default function App() {
             </div>
           ) : (
             <form className="form" onSubmit={handleRsvpSubmit}>
-              <input className="form-input" type="text" autoComplete="name" placeholder={t.rsvpPlaceholder} aria-label={t.rsvpPlaceholder} required name="name" style={{ fontFamily: 'Montserrat, sans-serif' }} />
+              <div className="name-row">
+                <input
+                  className="form-input"
+                  type="text"
+                  autoComplete="family-name"
+                  placeholder={t.rsvpLastNamePlaceholder}
+                  aria-label={t.rsvpLastNamePlaceholder}
+                  required
+                  name="lastName"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  style={{ fontFamily: 'Montserrat, sans-serif' }}
+                />
+                <input
+                  className="form-input"
+                  type="text"
+                  autoComplete="given-name"
+                  placeholder={t.rsvpFirstNamePlaceholder}
+                  aria-label={t.rsvpFirstNamePlaceholder}
+                  required
+                  name="firstName"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  style={{ fontFamily: 'Montserrat, sans-serif' }}
+                />
+              </div>
+
               <p className="form-question" id="rsvp-question">{t.rsvpQuestion}</p>
               <fieldset className="form-options" aria-labelledby="rsvp-question">
                 <label className="form-option">
-                  <input type="radio" required name="answer" value={t.rsvpOptions[0]} />
+                  <input
+                    type="radio"
+                    required
+                    name="answer"
+                    value={t.rsvpOptions[0]}
+                    checked={attendance === t.rsvpOptions[0]}
+                    onChange={(e) => setAttendance(e.target.value)}
+                  />
                   <span className="form-dot"></span><span>{t.rsvpOptions[0]}</span>
                 </label>
                 <label className="form-option">
-                  <input type="radio" required name="answer" value={t.rsvpOptions[1]} />
+                  <input
+                    type="radio"
+                    required
+                    name="answer"
+                    value={t.rsvpOptions[1]}
+                    checked={attendance === t.rsvpOptions[1]}
+                    onChange={(e) => setAttendance(e.target.value)}
+                  />
                   <span className="form-dot"></span><span>{t.rsvpOptions[1]}</span>
                 </label>
                 <label className="form-option">
-                  <input type="radio" required name="answer" value={t.rsvpOptions[2]} />
+                  <input
+                    type="radio"
+                    required
+                    name="answer"
+                    value={t.rsvpOptions[2]}
+                    checked={attendance === t.rsvpOptions[2]}
+                    onChange={(e) => setAttendance(e.target.value)}
+                  />
                   <span className="form-dot"></span><span>{t.rsvpOptions[2]}</span>
                 </label>
               </fieldset>
-              <button className="form-submit" type="submit" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                {t.rsvpSubmit}
+
+              {attendance === t.rsvpOptions[1] && (
+                <input
+                  className="form-input"
+                  type="text"
+                  placeholder={t.rsvpPartnerPlaceholder}
+                  aria-label={t.rsvpPartnerPlaceholder}
+                  required
+                  name="partnerName"
+                  value={partnerName}
+                  onChange={(e) => setPartnerName(e.target.value)}
+                  style={{ fontFamily: 'Montserrat, sans-serif' }}
+                />
+              )}
+
+              {submitError && (
+                <p className="form-error">{submitError}</p>
+              )}
+
+              <button
+                className="form-submit"
+                type="submit"
+                disabled={isSubmitting}
+                style={{ fontFamily: 'Montserrat, sans-serif' }}
+              >
+                {isSubmitting ? t.rsvpSubmitting : t.rsvpSubmit}
               </button>
             </form>
           )}
