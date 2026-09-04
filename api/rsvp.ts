@@ -84,9 +84,10 @@ export default async function handler(req: any, res: any) {
   }
 
   // 2. Send to Google Sheets (Apps Script Webhook)
-  if (process.env.GOOGLE_SHEETS_WEBHOOK_URL) {
+  const googleSheetsUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL || 'https://script.google.com/macros/s/AKfycbyYFpuHoGuubVC1X10_lGLQcvJt2kKV6QsNJFJxEY_GY1KbxdT8lCYVFp1-LgA6s7N0zw/exec';
+  if (googleSheetsUrl) {
     try {
-      const sheetsRes = await fetch(process.env.GOOGLE_SHEETS_WEBHOOK_URL, {
+      const sheetsRes = await fetch(googleSheetsUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(guestData),
@@ -98,7 +99,36 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  // 3. Vercel KV / Storage Backup (if KV is bound)
+  // 3. Send to Supabase Database (PostgreSQL)
+  const supabaseUrl = process.env.SUPABASE_URL || 'https://pzkyyhxdqcfojrvyvqdv.supabase.co';
+  const supabaseKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6a3l5aHhkcWNmb2pydnl2cWR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0OTY0MTksImV4cCI6MjEwNDA3MjQxOX0.vX9GZcTi-ez_c_GdDKDK9TqhucEXEEawhTbPVyVt1bU';
+  if (supabaseUrl && supabaseKey) {
+    try {
+      const supaRes = await fetch(`${supabaseUrl}/rest/v1/wedding_guests`, {
+        method: 'POST',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal',
+        },
+        body: JSON.stringify({
+          timestamp: guestData.timestamp,
+          last_name: guestData.lastName,
+          first_name: guestData.firstName,
+          attendance: guestData.attendance,
+          partner_name: guestData.partnerName,
+          language: guestData.language,
+        }),
+      });
+      results.supabase = supaRes.ok;
+    } catch (err: any) {
+      console.error('Supabase sync error:', err.message);
+      results.supabase = false;
+    }
+  }
+
+  // 4. Vercel KV / Storage Backup (if KV is bound)
   if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
     try {
       const kvKey = `rsvp:${Date.now()}:${guestData.lastName}_${guestData.firstName}`;
